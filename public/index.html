@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🚗 JA Funilaria e Pintura</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="tela-login">
+  <div class="login-box">
+    <div class="login-logo">
+      <span class="em">🚗</span>
+      <h1>JA Funilaria e Pintura</h1>
+      <p>Sistema de Gestão · Faça login para continuar</p>
+    </div>
+    <div class="login-erro" id="login-erro"></div>
+    <div class="fg">
+      <label>E-mail</label>
+      <input id="l-email" type="email" placeholder="admin@jafunilaria.com.br"
+        onkeydown="if(event.key==='Enter') fazerLogin()">
+    </div>
+    <div class="fg">
+      <label>Senha</label>
+      <input id="l-senha" type="password" placeholder="••••••"
+        onkeydown="if(event.key==='Enter') fazerLogin()">
+    </div>
+    <button class="btn btn-red" id="btn-login"
+      style="width:100%;padding:10px;margin-top:4px"
+      onclick="fazerLogin()">
+      Entrar
+    </button>
+    <p style="text-align:center;font-size:.69rem;color:var(--muted);margin-top:14px">
+      Rode <strong style="color:var(--text)">node seed.js</strong> para criar o admin inicial
+    </p>
+  </div>
+</div>
+
+<div id="app">
+  <aside id="sidebar">
+    <div class="sb-logo">
+      <h1>🚗 JA Funilaria</h1>
+      <div class="sb-user">
+        <span class="tag" id="sb-perfil">—</span>
+        <span id="sb-nome">—</span>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-group">Geral</div>
+      <button class="nav-btn ativo" onclick="ir('dashboard',this)">
+        <span class="ic">🏠</span><span>Dashboard</span>
+      </button>
+      <button class="nav-btn" onclick="ir('pedidos',this)">
+        <span class="ic">📑</span><span>Orçamentos</span>
+      </button>
+      <button class="nav-btn" onclick="ir('ordens-servico',this)">
+        <span class="ic">🔧</span><span>Ordens de Serviço</span>
+      </button>
+      <button class="nav-btn" onclick="ir('financeiro',this)">
+        <span class="ic">💰</span><span>Financeiro</span>
+      </button>
+      
+      <div class="sb-group">Cadastros</div>
+      <button class="nav-btn" onclick="ir('pizzas',this)">
+        <span class="ic">🛠</span><span id="nav-pizzas-label">Serviços</span>
+      </button>
+      <button class="nav-btn" onclick="ir('clientes',this)">
+        <span class="ic">👥</span><span>Clientes</span>
+      </button>
+      <button class="nav-btn" onclick="ir('veiculos',this)">
+        <span class="ic">🚗</span><span>Veículos</span>
+      </button>
+      
+      <div class="sb-group" id="menu-usuarios" style="display:none">Sistema</div>
+      <button class="nav-btn" id="btn-usuarios" onclick="ir('usuarios',this)"
+        style="display:none">
+        <span class="ic">👤</span><span>Usuários</span>
+      </button>
+    </nav>
+    <div class="sb-footer">
+      <span>v2.0</span>
+      <button class="btn-logout" onclick="sair()">Sair</button>
+    </div>
+  </aside>
+
+  <div id="conteudo">
+    <section id="pg-dashboard" class="secao ativa">
+      <div class="pg-header">
+        <div>
+          <h2>Dashboard</h2>
+          <p id="dash-sub">Resumo do sistema</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="carregarDashboard()">↻ Atualizar</button>
+      </div>
+      <div class="pg-body">
+        <div class="stats-grid">
+          <div class="stat cr">
+            <span class="ico">📑</span>
+            <div class="lbl">Orçamentos Pendentes</div>
+            <div class="val" id="s-ped">—</div>
+            <div class="sub" id="s-ped-sub">carregando</div>
+          </div>
+          <div class="stat co" id="stat-fat">
+            <span class="ico">💰</span>
+            <div class="lbl">Faturamento</div>
+            <div class="val" id="s-fat">—</div>
+            <div class="sub">total geral</div>
+          </div>
+          <div class="stat cg" id="stat-cli">
+            <span class="ico">👥</span>
+            <div class="lbl">Clientes</div>
+            <div class="val" id="s-cli">—</div>
+            <div class="sub">cadastrados</div>
+          </div>
+          <div class="stat cb">
+            <span class="ico">🛠</span>
+            <div class="lbl">Serviços</div>
+            <div class="val" id="s-piz">—</div>
+            <div class="sub">cadastrados</div>
+          </div>
+          <div class="stat cp">
+            <span class="ico">🚗</span>
+            <div class="lbl">Veículos na Oficina</div>
+            <div class="val" id="s-ent">—</div>
+            <div class="sub">em execução</div>
+          </div>
+        </div>
+        <div class="dash-grid">
+          <div class="card">
+            <div class="card-head">
+              <h3>Ordens de Serviço Recentes</h3>
+              <button class="btn btn-red btn-sm"
+                onclick="ir('pedidos', document.querySelector('[onclick*=pedidos]'))">
+                + Novo Orçamento
+              </button>
+            </div>
+            <div class="card-body" id="dash-pedidos">
+              <div class="spin-wrap"><div class="spin"></div> Carregando...</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Serviços Cadastrados</h3></div>
+            <div class="card-body" id="dash-cardapio">
+              <div class="spin-wrap"><div class="spin"></div> Carregando...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pg-pedidos" class="secao">
+      <div class="pg-header">
+        <div><h2>Orçamentos</h2><p>Acompanhe e gerencie os orçamentos</p></div>
+        <button class="btn btn-red" onclick="abrirPedido()">+ Novo Orçamento</button>
+      </div>
+      <div class="pg-body">
+        <div class="card">
+          <div class="card-body tbl-wrap" id="tbl-pedidos">
+            <div class="spin-wrap"><div class="spin"></div> Carregando...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pg-pizzas" class="secao">
+      <div class="pg-header">
+        <div>
+          <h2 id="pg-pizzas-titulo">Serviços</h2>
+          <p id="pg-pizzas-sub">Gerencie a tabela de serviços</p>
+        </div>
+        <button class="btn btn-red" id="btn-nova-pizza" onclick="abrirPizza()">+ Novo Serviço</button>
+      </div>
+      <div class="pg-body">
+        <div class="card">
+          <div class="card-body tbl-wrap" id="tbl-pizzas">
+            <div class="spin-wrap"><div class="spin"></div> Carregando...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pg-clientes" class="secao">
+      <div class="pg-header">
+        <div><h2>Clientes</h2><p>Cadastre e busque clientes</p></div>
+        <button class="btn btn-red" onclick="abrirCliente()">+ Novo Cliente</button>
+      </div>
+      <div class="pg-body">
+        <div style="margin-bottom:12px; display:flex; gap:10px;">
+          <input id="busca-cli" placeholder="🔍  Buscar por nome..."
+            style="max-width:270px" oninput="buscarCli(this.value)">
+        </div>
+        <div class="card">
+          <div class="card-body tbl-wrap" id="tbl-clientes">
+            <div class="spin-wrap"><div class="spin"></div> Carregando...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pg-veiculos" class="secao">
+      <div class="pg-header">
+        <div><h2>Veículos</h2><p>Gerenciamento da frota dos clientes</p></div>
+        <button class="btn btn-red" onclick="fechar('', 'm-veiculo') || document.getElementById('m-veiculo').classList.add('ativa')">+ Novo Veículo</button>
+      </div>
+      <div class="pg-body">
+        <div class="card">
+          <div class="card-body tbl-wrap" id="tbl-veiculos">
+            <div class="spin-wrap"><div class="spin"></div> Carregando...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pg-ordens-servico" class="secao">
+      <div class="pg-header">
+        <div><h2>Ordens de Serviço</h2><p>Controle do fluxo de execução da oficina</p></div>
+      </div>
+      <div class="pg-body">
+        <div class="card">
+          <div class="card-body tbl-wrap" id="tbl-ordens-servico">
+            <div class="spin-wrap"><div class="spin"></div> Carregando...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pg-financeiro" class="secao">
+      <div class="pg-header">
+        <div><h2>Financeiro</h2><p>Controle de fluxo de caixa e receitas</p></div>
+      </div>
+      <div class="pg-body">
+        <div class="stats-grid" style="margin-bottom: 20px;">
+          <div class="stat cg">
+            <span class="ico">💰</span>
+            <div class="lbl">Receita Mensal</div>
+            <div class="val" id="fin-receita">R$ 0,00</div>
+          </div>
+          <div class="stat cr">
+            <span class="ico">⏳</span>
+            <div class="lbl">Valores Pendentes</div>
+            <div class="val" id="fin-pendente">R$ 0,00</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body tbl-wrap" id="tbl-financeiro">
+            <div class="spin-wrap"><div class="spin"></div> Carregando...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pg-usuarios" class="secao">
+      <div class="pg-header">
+        <div><h2>Usuários</h2><p>Administradores e Ajudantes</p></div>
+        <button class="btn btn-ghost" onclick="abrirUsuario()">+ Novo Usuário</button>
+      </div>
+      <div class="pg-body">
+        <div class="card">
+          <div class="card-body tbl-wrap" id="tbl-usuarios">
+            <div class="spin-wrap"><div class="spin"></div> Carregando...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div id="m-pizza" class="modal-bg">
+  <div class="modal">
+    <h3 id="m-pizza-t">Novo Serviço</h3>
+    <input type="hidden" id="p-id">
+    <div class="fr2">
+      <div class="fg"><label>Nome do Serviço *</label><input id="p-nome" placeholder="Ex: Pintura Parachoque Dianteiro"></div>
+      <div class="fg"><label>Categoria</label>
+        <select id="p-cat">
+          <option value="funilaria">Funilaria</option>
+          <option value="pintura">Pintura</option>
+          <option value="polimento">Polimento</option>
+          <option value="lanternagem">Lanternagem</option>
+          <option value="troca_pecas">Troca de Peças</option>
+          <option value="estetica">Estética Automotiva</option>
+          <option value="outros">Outros</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label>Descrição curta *</label><input id="p-ing" placeholder="Especificações técnicas ou escopo básico..."></div>
+    <div class="fg"><label>Observações adicionais</label><input id="p-desc" placeholder="Restrições ou insumos especiais..."></div>
+    <div class="fr3">
+      <div class="fg" style="grid-column: span 3;"><label>Preço Base (R$)</label><input id="p-pm" type="number" step="0.01" min="0" placeholder="450,00"><input id="p-pp" type="hidden" value="0"><input id="p-pg" type="hidden" value="0"></div>
+    </div>
+    <div class="fg"><label>Disponível</label>
+      <select id="p-disp">
+        <option value="true">✅ Sim</option>
+        <option value="false">❌ Não</option>
+      </select>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="fechar('m-pizza')">Cancelar</button>
+      <button class="btn btn-red"   onclick="salvarPizza()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div id="m-cliente" class="modal-bg">
+  <div class="modal">
+    <h3 id="m-cli-t">Novo Cliente</h3>
+    <input type="hidden" id="c-id">
+    <div class="fr2">
+      <div class="fg"><label>Nome *</label><input id="c-nome" placeholder="João da Silva"></div>
+      <div class="fg"><label>Telefone *</label><input id="c-tel" placeholder="(11) 99999-9999"></div>
+    </div>
+    <div class="fr2">
+      <div class="fg"><label>CPF *</label><input id="c-rua" placeholder="000.000.000-00"></div>
+      <div class="fg"><label>RG / CNH</label><input id="c-num" placeholder="Isento / Número"></div>
+    </div>
+    <div class="fg" style="display:none;">
+      <input id="c-bairro" value="-"><input id="c-cidade" value="-"><input id="c-cep" value="-"><input id="c-comp" value="-">
+    </div>
+    <div class="fg"><label>Observações</label><input id="c-obs" placeholder="Particularidades do cliente, restrição de horários..."></div>
+    <div class="modal-foot" style="display:flex; justify-content:space-between;">
+      <button class="btn btn-blue" onclick="fechar('m-cliente'); document.getElementById('m-veiculo').classList.add('ativa');">+ Novo Veículo</button>
+      <div>
+        <button class="btn btn-ghost" onclick="fechar('m-cliente')">Cancelar</button>
+        <button class="btn btn-red"   onclick="salvarCliente()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="m-veiculo" class="modal-bg">
+  <div class="modal">
+    <h3>Novo Veículo</h3>
+    <input type="hidden" id="v-id">
+    <div class="fg"><label>Cliente Vinculado *</label><select id="v-cli"></select></div>
+    <div class="fr2">
+      <div class="fg"><label>Marca *</label><input id="v-marca" placeholder="Ex: Volkswagen"></div>
+      <div class="fg"><label>Modelo *</label><input id="v-modelo" placeholder="Ex: Gol Golf"></div>
+    </div>
+    <div class="fr3">
+      <div class="fg"><label>Ano</label><input id="v-ano" type="number" placeholder="2022"></div>
+      <div class="fg"><label>Cor</label><input id="v-cor" placeholder="Preto Ninja"></div>
+      <div class="fg"><label>Placa *</label><input id="v-placa" placeholder="ABC1D23"></div>
+    </div>
+    <div class="fg"><label>Quilometragem</label><input id="v-km" type="number" placeholder="45000"></div>
+    <div class="fg"><label>Observações / Sinistros</label><input id="v-obs" placeholder="Riscos pré-existentes, batidas graves..."></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="this.closest('.modal-bg').classList.remove('ativa')">Cancelar</button>
+      <button class="btn btn-red" onclick="/* Função JS: salvarVeiculo() */ this.closest('.modal-bg').classList.remove('ativa')">Salvar Veículo</button>
+    </div>
+  </div>
+</div>
+
+<div id="m-pedido" class="modal-bg">
+  <div class="modal lg">
+    <h3>Novo Orçamento</h3>
+    <div class="fr2">
+      <div class="fg"><label>Cliente *</label><select id="ped-cli"></select></div>
+      <div class="fg"><label>Veículo *</label><select id="ped-veiculo"><option>Selecione o veículo do cliente...</option></select></div>
+    </div>
+    <div class="div"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+      <label style="margin-bottom:0;font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.3px">Serviços do Orçamento</label>
+      <button class="btn btn-ghost btn-sm" onclick="addItem()">+ Serviço</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 68px 58px 68px 30px;gap:6px;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;padding:0 1px">
+      <span>Serviço</span><span>Tipo</span><span>Qtd</span><span>Subtotal</span><span></span>
+    </div>
+    <div id="itens-lista"></div>
+    <div class="total-box">
+      <div class="row"><span>Mão de Obra Base</span><span id="ped-sub">R$ 0,00</span></div>
+      <div class="row"><span>Insumos / Peças Adicionais (R$)</span><input id="ped-taxa" type="number" min="0" step="0.5" value="0" style="width:72px;text-align:right;padding:3px 6px" oninput="recalc()"></div>
+      <div class="row tot"><span>VALOR TOTAL</span><span id="ped-tot">R$ 0,00</span></div>
+    </div>
+    <div class="fr2">
+      <div class="fg"><label>Condição / Forma de Pagamento *</label><select id="ped-pag" onchange="toggleTroco()"><option value="pix">PIX</option><option value="cartao_credito">Cartão de Crédito</option><option value="cartao_debito">Cartão de Débito</option><option value="dinheiro">Dinheiro / Entrada</option></select></div>
+      <div class="fg" id="wrap-troco" style="display:none"><label>Valor de Entrada (R$)</label><input id="ped-troco" type="number" min="0" step="1" placeholder="Ex: 500"></div>
+    </div>
+    <div class="fg"><label>Observações do Orçamento</label><textarea id="ped-obs" rows="2" placeholder="Descrever avarias estruturais ou detalhes da repintura..."></textarea></div>
+    
+    <div class="fg" style="margin-top: 10px;">
+      <label>Status do Orçamento</label>
+      <select id="orc-status-fluxo">
+        <option value="pendente">⏳ Pendente</option>
+        <option value="aprovado">✔ Aprovado (Gera O.S. Automaticamente)</option>
+        <option value="recusado">❌ Recusado</option>
+      </select>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="fechar('m-pedido')">Cancelar</button>
+      <button class="btn btn-red"   onclick="salvarPedido()">Salvar Orçamento</button>
+    </div>
+  </div>
+</div>
+
+<div id="m-status" class="modal-bg">
+  <div class="modal" style="max-width:380px">
+    <h3>Atualizar Ordem de Serviço</h3>
+    <input type="hidden" id="st-id">
+    
+    <div style="font-size:0.75rem; color:var(--muted); margin-bottom:15px; padding:8px; background:rgba(255,255,255,0.05); border-radius:6px;">
+      <strong>Linha do Tempo:</strong> Recebido ➔ Funilaria ➔ Preparação ➔ Pintura ➔ Montagem ➔ Polimento ➔ Finalizado
+    </div>
+
+    <div class="fg"><label>Fase / Status Atual</label>
+      <select id="st-val">
+        <option value="recebido">📥 Recebido</option>
+        <option value="funilaria">🔨 Funilaria</option>
+        <option value="preparacao">⏳ Preparação</option>
+        <option value="pintura">🎨 Pintura</option>
+        <option value="montagem">🔧 Montagem</option>
+        <option value="polimento">✨ Polimento</option>
+        <option value="finalizado">🏁 Finalizado</option>
+        <option value="entregue">✅ Entregue ao Cliente</option>
+        <option value="cancelado">❌ Cancelado</option>
+      </select>
+    </div>
+    <div class="fg" style="margin-top:10px;">
+      <label>Responsável Técnico / Ajudante</label>
+      <input type="text" id="st-responsavel" placeholder="Nome do executor...">
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="fechar('m-status')">Cancelar</button>
+      <button class="btn btn-blue"  onclick="salvarStatus()">Atualizar Status</button>
+    </div>
+  </div>
+</div>
+
+<div id="m-usuario" class="modal-bg">
+  <div class="modal">
+    <h3>Novo Usuário</h3>
+    <div class="fr2">
+      <div class="fg"><label>Nome *</label><input id="u-nome" placeholder="Nome completo"></div>
+      <div class="fg"><label>Perfil</label>
+        <select id="u-perfil">
+          <option value="Administrador">Administrador</option>
+          <option value="Ajudante">Ajudante</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label>E-mail *</label><input id="u-email" type="email" placeholder="usuario@jafunilaria.com.br"></div>
+    <div class="fg"><label>Senha *</label><input id="u-senha" type="password" placeholder="Mínimo 6 caracteres"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="fechar('m-usuario')">Cancelar</button>
+      <button class="btn btn-ghost" onclick="salvarUsuario()">Criar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="script.js"></script>
+</body>
+</html>
