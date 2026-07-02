@@ -1,7 +1,7 @@
 {
-  "name": "sistema_pizzaria",
+  "name": "sistema_funilaria",
   "version": "2.0.0",
-  "description": "Sistema de pizzaria com SQLite (sql.js)",
+  "description": "Sistema de sistema_funilaria com SQLite (sql.js)",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
