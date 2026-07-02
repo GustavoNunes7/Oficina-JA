@@ -1,5 +1,6 @@
 // ============================================================
-// Pedido.js — Model de Pedido (sql.js)
+// Pedido.js — Model de Orçamentos e Ordens de Serviço (sql.js)
+// Sistema: JA Funilaria e Pintura
 // ============================================================
 
 const { ready, query, run, get } = require('../database/sqlite');
@@ -18,7 +19,7 @@ function formatarPedido(row, itens = []) {
   return {
     _id:           row.id,
     id:            row.id,
-    numeroPedido:  row.numero_pedido,
+    numeroPedido:  row.numero_pedido, // Mapeia o número do Orçamento ou O.S.
     cliente: {
       _id:      row.cliente_id,
       id:       row.cliente_id,
@@ -27,23 +28,23 @@ function formatarPedido(row, itens = []) {
     },
     itens: itens.map(it => ({
       _id:           it.id,
-      pizza:         it.pizza_id,
-      nomePizza:     it.nome_pizza,
-      tamanho:       it.tamanho,
+      pizza:         it.pizza_id,       // ID do serviço técnico no catálogo
+      nomePizza:     it.nome_pizza,     // Nome descritivo do serviço prestado
+      tamanho:       it.tamanho,        // Mantido 'M' por retrocompatibilidade estrutural
       quantidade:    it.quantidade,
       precoUnitario: it.preco_unitario,
       subtotal:      it.subtotal,
     })),
-    subtotal:       row.subtotal,
-    taxaEntrega:    row.taxa_entrega,
-    total:          row.total,
+    subtotal:       row.subtotal,        // Mão de obra bruta
+    taxaEntrega:    row.taxa_entrega,    // Reaproveitado para Custo de Insumos / Peças
+    total:          row.total,           // Valor global consolidado
     formaPagamento: row.forma_pagamento,
     troco:          row.troco,
-    status:         row.status,
-    observacoes:    row.observacoes,
-    mesa:           row.mesa,
-    origem:         row.origem,
-    garcom:         row.garcom_id,
+    status:         row.status,          // Fases: pendente, aprovado, funilaria, pintura, polimento, entregue...
+    observacoes:    row.observacoes,     // Detalhes de avarias / prazos
+    mesa:           row.mesa,            // Identificador do veículo / vaga no pátio
+    origem:         row.origem,          // Origem do atendimento ('oficina')
+    garcom:         row.garcom_id,       // Técnico/Ajudante alocado na execução
     createdAt:      row.created_at,
     updatedAt:      row.updated_at,
   };
@@ -55,6 +56,7 @@ const Pedido = {
     await ready;
     let rows;
     if (garcomId) {
+      // Lista as O.S. vinculadas a um Ajudante/Técnico específico
       rows = query(`${SELECT_PEDIDO} WHERE p.garcom_id = ? ORDER BY p.created_at DESC`, [garcomId]);
     } else {
       rows = query(`${SELECT_PEDIDO} ORDER BY p.created_at DESC`);
@@ -73,18 +75,20 @@ const Pedido = {
     return formatarPedido(row, itens);
   },
 
-  async create({ clienteId, itens, taxaEntrega = 0, formaPagamento, troco = 0, observacoes = '', mesa = null, origem = 'balcao', garcomId = null }) {
+  async create({ clienteId, itens, taxaEntrega = 0, formaPagamento, troco = 0, observacoes = '', mesa = null, origem = 'oficina', garcomId = null, status = 'pendente' }) {
     await ready;
 
+    // Carrega o model correspondente de Serviços (Atrelado ao arquivo Pizza.js para manter as rotas)
     const Pizza = require('./Pizza');
     let subtotal = 0;
     const itensProcessados = [];
 
     for (const item of itens) {
       const pizza = await Pizza.findById(item.pizza);
-      if (!pizza) throw new Error(`Pizza ID ${item.pizza} não encontrada`);
+      if (!pizza) throw new Error(`Serviço ID ${item.pizza} não localizado no catálogo`);
 
-      const preco   = pizza.precos[item.tamanho] || 0;
+      // Extrai o preço do serviço técnico (garantindo fallback no valor unificado 'M')
+      const preco   = pizza.precos[item.tamanho] || pizza.precos['M'] || 0;
       const subItem = preco * item.quantidade;
       subtotal     += subItem;
 
@@ -98,6 +102,7 @@ const Pedido = {
       });
     }
 
+    // Soma o custo dos serviços com a taxa estendida de insumos/peças adicionais
     const total        = subtotal + (taxaEntrega || 0);
     const contagem     = get('SELECT COUNT(*) as total FROM pedidos');
     const numeroPedido = (contagem?.total || 0) + 1;
@@ -105,10 +110,10 @@ const Pedido = {
     const infoPedido = run(`
       INSERT INTO pedidos
         (numero_pedido, cliente_id, subtotal, taxa_entrega, total,
-         forma_pagamento, troco, observacoes, mesa, origem, garcom_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         forma_pagamento, troco, status, observacoes, mesa, origem, garcom_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [numeroPedido, clienteId, subtotal, taxaEntrega || 0, total,
-        formaPagamento, troco || 0, observacoes, mesa, origem, garcomId]);
+        formaPagamento, troco || 0, status, observacoes, mesa, origem, garcomId]);
 
     const pedidoId = infoPedido.lastInsertRowid;
 
@@ -134,7 +139,7 @@ const Pedido = {
 
   async delete(id) {
     await ready;
-    // Deleta itens primeiro (sem CASCADE no sql.js)
+    // Remove os itens vinculados ao orçamento primeiro (Simula restrição de integridade referencial)
     run('DELETE FROM itens_pedido WHERE pedido_id = ?', [id]);
     const info = run('DELETE FROM pedidos WHERE id = ?', [id]);
     return info.changes > 0;

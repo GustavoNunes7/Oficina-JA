@@ -1,5 +1,6 @@
 // ============================================================
-// Pizza.js — Model de Pizza (sql.js)
+// Pizza.js — Model de Serviços Técnicos (sql.js)
+// Sistema: JA Funilaria e Pintura
 // ============================================================
 
 const { ready, query, run, get } = require('../database/sqlite');
@@ -7,16 +8,17 @@ const { ready, query, run, get } = require('../database/sqlite');
 function formatarPizza(row) {
   if (!row) return null;
   return {
-    _id:         row.id,
-    id:          row.id,
-    nome:        row.nome,
-    descricao:   row.descricao,
-    ingredientes: row.ingredientes,
-    precos:      JSON.parse(row.precos || '{"P":0,"M":0,"G":0}'),
-    disponivel:  row.disponivel === 1,
-    categoria:   row.categoria,
-    createdAt:   row.created_at,
-    updatedAt:   row.updated_at,
+    _id:          row.id,
+    id:           row.id,
+    nome:         row.nome,         // Nome do serviço (ex: Pintura Parachoque)
+    descricao:    row.descricao,    // Detalhamento estendido do processo
+    ingredientes: row.ingredientes, // Reaproveitado como descrição técnica curta/insumos
+    // Garante compatibilidade com o front unificando o preço base nas três chaves legadas
+    precos:       JSON.parse(row.precos || '{"P":0,"M":0,"G":0}'),
+    disponivel:   row.disponivel === 1,
+    categoria:    row.categoria,    // funilaria, pintura, polimento, etc.
+    createdAt:    row.created_at,
+    updatedAt:    row.updated_at,
   };
 }
 
@@ -32,13 +34,23 @@ const Pizza = {
     return formatarPizza(get('SELECT * FROM pizzas WHERE id = ?', [id]));
   },
 
-  async create({ nome, descricao = '', ingredientes, precos = {}, disponivel = true, categoria = 'tradicional' }) {
+  async create({ nome, descricao = '', ingredientes, precos = {}, disponivel = true, categoria = 'funilaria' }) {
     await ready;
+    
+    // Captura o preço enviado (prioriza M, caso contrário P ou G) e replica para evitar quebras de esquema
+    const precoBase = precos.M || precos.P || precos.G || 0;
+    const objetoPreco = { P: precoBase, M: precoBase, G: precoBase };
+
     const info = run(
       'INSERT INTO pizzas (nome, descricao, ingredientes, precos, disponivel, categoria) VALUES (?, ?, ?, ?, ?, ?)',
-      [nome.trim(), descricao.trim(), ingredientes.trim(),
-       JSON.stringify({ P: precos.P || 0, M: precos.M || 0, G: precos.G || 0 }),
-       disponivel ? 1 : 0, categoria]
+      [
+        nome.trim(), 
+        descricao.trim(), 
+        ingredientes ? ingredientes.trim() : '', 
+        JSON.stringify(objetoPreco),
+        disponivel ? 1 : 0, 
+        categoria
+      ]
     );
     return this.findById(info.lastInsertRowid);
   },
@@ -49,9 +61,15 @@ const Pizza = {
     if (!atual) return null;
 
     const precosAtuais = JSON.parse(atual.precos || '{"P":0,"M":0,"G":0}');
-    const precosFinal  = precos
-      ? { P: precos.P ?? precosAtuais.P, M: precos.M ?? precosAtuais.M, G: precos.G ?? precosAtuais.G }
-      : precosAtuais;
+    
+    let precosFinal;
+    if (precos) {
+      // Se houver alteração de preço, replica o valor base em todas as chaves
+      const novoPrecoBase = precos.M ?? precos.P ?? precos.G ?? precosAtuais.M;
+      precosFinal = { P: novoPrecoBase, M: novoPrecoBase, G: novoPrecoBase };
+    } else {
+      precosFinal = precosAtuais;
+    }
 
     run(`
       UPDATE pizzas SET

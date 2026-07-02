@@ -1,5 +1,6 @@
 // ============================================================
 // Usuario.js — Model de Usuário (sql.js)
+// Sistema: JA Funilaria e Pintura
 // ============================================================
 
 const { ready, query, run, get } = require('../database/sqlite');
@@ -12,7 +13,7 @@ function formatarUsuario(row) {
     id:        row.id,
     nome:      row.nome,
     email:     row.email,
-    perfil:    row.perfil,
+    perfil:    row.perfil, // 'Administrador' ou 'Ajudante'
     ativo:     row.ativo === 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -44,7 +45,7 @@ const Usuario = {
     return formatarUsuario(row);
   },
 
-  async create({ nome, email, senha, perfil = 'Atendente' }) {
+  async create({ nome, email, senha, perfil = 'Ajudante' }) {
     await ready;
     const hash = await bcrypt.hash(senha, 10);
     const info = run(

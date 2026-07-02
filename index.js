@@ -18,7 +18,7 @@ ready.then(() => {
   app.use('/api', routes)
 
   app.get('/teste', (req, res) => {
-    res.json({ mensagem: 'API da Pizzaria funcionando!', status: 'online', porta: PORT })
+    res.json({ mensagem: 'API da Oficina funcionando!', status: 'online', porta: PORT })
   })
 
   app.get('*', (req, res) => {

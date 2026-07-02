@@ -1,13 +1,19 @@
+// ============================================================
+// routes/index.js 
+// Rotas da API da Oficina — JA Funilaria e Pintura
+// ============================================================
+
 const express  = require('express');
 const jwt      = require('jsonwebtoken');
 const router   = express.Router();
 const auth     = require('../middlewares/auth');
 
 const Usuario  = require('../models/Usuario');
-const Pizza    = require('../models/Pizza');
+const Pizza    = require('../models/Pizza'); // Mapeia Serviços Técnicos
 const Cliente  = require('../models/Cliente');
-const Pedido   = require('../models/Pedido');
+const Pedido   = require('../models/Pedido');  // Mapeia Orçamentos / Ordens de Serviço
 
+// ── AUTENTICAÇÃO ───────────────────────────────────────────
 router.post('/auth/login', async (req, res) => {
   try {
     const { email, senha } = req.body;
@@ -29,6 +35,7 @@ router.post('/auth/login', async (req, res) => {
   } catch (e) { res.status(500).json({ erro: e.message }); }
 });
 
+// ── SERVIÇOS TÉCNICOS (Mapeado sob /pizzas por compatibilidade) ──
 router.get('/pizzas', auth, async (req, res) => {
   try { res.json(await Pizza.findAll()); }
   catch (e) { res.status(500).json({ erro: e.message }); }
@@ -37,15 +44,15 @@ router.get('/pizzas', auth, async (req, res) => {
 router.get('/pizzas/:id', auth, async (req, res) => {
   try {
     const p = await Pizza.findById(req.params.id);
-    if (!p) return res.status(404).json({ erro: 'Pizza não encontrada' });
+    if (!p) return res.status(404).json({ erro: 'Serviço técnico não encontrado' });
     res.json(p);
   } catch (e) { res.status(500).json({ erro: e.message }); }
 });
 
 router.post('/pizzas', auth, async (req, res) => {
   try {
-    if (!req.body.nome || !req.body.ingredientes)
-      return res.status(400).json({ erro: 'Nome e ingredientes são obrigatórios' });
+    if (!req.body.nome)
+      return res.status(400).json({ erro: 'O nome do serviço é obrigatório' });
     res.status(201).json(await Pizza.create(req.body));
   } catch (e) { res.status(500).json({ erro: e.message }); }
 });
@@ -53,7 +60,7 @@ router.post('/pizzas', auth, async (req, res) => {
 router.put('/pizzas/:id', auth, async (req, res) => {
   try {
     const p = await Pizza.update(req.params.id, req.body);
-    if (!p) return res.status(404).json({ erro: 'Pizza não encontrada' });
+    if (!p) return res.status(404).json({ erro: 'Serviço técnico não encontrado' });
     res.json(p);
   } catch (e) { res.status(500).json({ erro: e.message }); }
 });
@@ -61,11 +68,12 @@ router.put('/pizzas/:id', auth, async (req, res) => {
 router.delete('/pizzas/:id', auth, async (req, res) => {
   try {
     const ok = await Pizza.delete(req.params.id);
-    if (!ok) return res.status(404).json({ erro: 'Pizza não encontrada' });
-    res.json({ mensagem: 'Pizza deletada' });
+    if (!ok) return res.status(404).json({ erro: 'Serviço técnico não encontrado' });
+    res.json({ mensagem: 'Serviço técnico removido do catálogo' });
   } catch (e) { res.status(500).json({ erro: e.message }); }
 });
 
+// ── CLIENTES ───────────────────────────────────────────────
 router.get('/clientes', auth, async (req, res) => {
   try { res.json(await Cliente.findAll(req.query.busca)); }
   catch (e) { res.status(500).json({ erro: e.message }); }
@@ -99,14 +107,15 @@ router.delete('/clientes/:id', auth, async (req, res) => {
   try {
     const ok = await Cliente.delete(req.params.id);
     if (!ok) return res.status(404).json({ erro: 'Cliente não encontrado' });
-    res.json({ mensagem: 'Cliente deletado' });
+    res.json({ mensagem: 'Cliente excluído com sucesso' });
   } catch (e) { res.status(500).json({ erro: e.message }); }
 });
 
+// ── ORÇAMENTOS E ORDENS DE SERVIÇO (Mapeado sob /pedidos) ──
 router.get('/pedidos', auth, async (req, res) => {
   try {
     const filtros = {};
-    if (req.query.garcom) filtros.garcomId = req.query.garcom;
+    if (req.query.garcom) filtros.garcomId = req.query.garcom; // Filtra por Ajudante alocado
     res.json(await Pedido.findAll(filtros));
   } catch (e) { res.status(500).json({ erro: e.message }); }
 });
@@ -114,7 +123,7 @@ router.get('/pedidos', auth, async (req, res) => {
 router.get('/pedidos/:id', auth, async (req, res) => {
   try {
     const p = await Pedido.findById(req.params.id);
-    if (!p) return res.status(404).json({ erro: 'Pedido não encontrado' });
+    if (!p) return res.status(404).json({ erro: 'Orçamento / O.S. não encontrado' });
     res.json(p);
   } catch (e) { res.status(500).json({ erro: e.message }); }
 });
@@ -128,13 +137,14 @@ router.post('/pedidos', auth, async (req, res) => {
     const novo = await Pedido.create({
       clienteId:      cliente,
       itens,
-      taxaEntrega:    req.body.taxaEntrega,
+      taxaEntrega:    req.body.taxaEntrega, // Adicional de Peças / Insumos
       formaPagamento,
       troco:          req.body.troco,
       observacoes:    req.body.observacoes,
-      mesa:           req.body.mesa,
-      origem:         req.body.origem,
-      garcomId:       req.body.garcom || req.usuario?.id,
+      mesa:           req.body.mesa,        // ID do Veículo / Vaga no Pátio
+      origem:         req.body.origem || 'oficina',
+      garcomId:       req.body.garcom || req.usuario?.id, // Vincula ao Ajudante/Técnico logado
+      status:         req.body.status || 'pendente'
     });
     res.status(201).json(novo);
   } catch (e) { res.status(400).json({ erro: e.message }); }
@@ -142,11 +152,13 @@ router.post('/pedidos', auth, async (req, res) => {
 
 router.patch('/pedidos/:id/status', auth, async (req, res) => {
   try {
-    const validos = ['recebido','em_preparo','saiu_entrega','entregue','cancelado'];
+    // Atualizado com os status correspondentes às fases da Oficina
+    const validos = ['pendente', 'aprovado', 'funilaria', 'pintura', 'polimento', 'entregue', 'cancelado'];
     if (!validos.includes(req.body.status))
-      return res.status(400).json({ erro: 'Status inválido' });
+      return res.status(400).json({ erro: 'Status operacional inválido' });
+      
     const p = await Pedido.updateStatus(req.params.id, req.body.status);
-    if (!p) return res.status(404).json({ erro: 'Pedido não encontrado' });
+    if (!p) return res.status(404).json({ erro: 'Orçamento / O.S. não encontrado' });
     res.json(p);
   } catch (e) { res.status(500).json({ erro: e.message }); }
 });
@@ -154,11 +166,12 @@ router.patch('/pedidos/:id/status', auth, async (req, res) => {
 router.delete('/pedidos/:id', auth, async (req, res) => {
   try {
     const ok = await Pedido.delete(req.params.id);
-    if (!ok) return res.status(404).json({ erro: 'Pedido não encontrado' });
-    res.json({ mensagem: 'Pedido deletado' });
+    if (!ok) return res.status(404).json({ erro: 'Orçamento / O.S. não encontrado' });
+    res.json({ mensagem: 'Registro excluído do histórico' });
   } catch (e) { res.status(500).json({ erro: e.message }); }
 });
 
+// ── USUÁRIOS E EQUIPE (Apenas Perfil 'Administrador') ───────
 router.get('/usuarios', auth, async (req, res) => {
   try {
     if (req.usuario.perfil !== 'Administrador')
@@ -197,7 +210,7 @@ router.delete('/usuarios/:id', auth, async (req, res) => {
       return res.status(403).json({ erro: 'Acesso restrito a Administradores' });
     const ok = await Usuario.delete(req.params.id);
     if (!ok) return res.status(404).json({ erro: 'Usuário não encontrado' });
-    res.json({ mensagem: 'Usuário deletado' });
+    res.json({ mensagem: 'Membro da equipe removido' });
   } catch (e) { res.status(500).json({ erro: e.message }); }
 });
 

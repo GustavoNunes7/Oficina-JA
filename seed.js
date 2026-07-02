@@ -1,12 +1,13 @@
 require('dotenv').config();
-const { ready, run, query } = require('./src/database/sqlite');
+const { ready, run } = require('./src/database/sqlite');
 const bcrypt = require('bcryptjs');
 
 async function seed() {
   try {
     await ready;
-    console.log('🧹 Limpando banco...');
+    console.log('🧹 Limpando banco da oficina...');
 
+    // Limpa os dados das tabelas mantendo a estrutura original
     run('DELETE FROM itens_pedido');
     run('DELETE FROM pedidos');
     run('DELETE FROM pizzas');
@@ -21,77 +22,80 @@ async function seed() {
 
     const hash = await bcrypt.hash('123456', 10);
 
+    // Criação dos membros da equipe da JA Funilaria e Pintura
     run('INSERT INTO usuarios (nome, email, senha, perfil) VALUES (?, ?, ?, ?)',
-      ['Administrador Master', 'admin@pizzaria.com', hash, 'Administrador']);
+      ['Administrador Master', 'admin@jafunilaria.com', hash, 'Administrador']);
     run('INSERT INTO usuarios (nome, email, senha, perfil) VALUES (?, ?, ?, ?)',
-      ['Atendente Oficial', 'atendente@pizzaria.com', hash, 'Atendente']);
+      ['Ajudante Oficial 01', 'ajudante1@jafunilaria.com', hash, 'Ajudante']);
     run('INSERT INTO usuarios (nome, email, senha, perfil) VALUES (?, ?, ?, ?)',
-      ['Garcom Oficial', 'garcom@pizzaria.com', hash, 'Garcom']);
+      ['Ajudante Oficial 02', 'ajudante2@jafunilaria.com', hash, 'Ajudante']);
 
-    console.log('✅ 3 usuários criados');
+    console.log('✅ 3 usuários da equipe criados');
 
+    // Clientes adaptados: o campo 'endereco' (JSON) armazena os dados do Veículo (Placa, Modelo, Cor)
     const clientes = [
-      ['Lucas Ferreira Santos',   '11991234501', {rua:'Rua das Acácias',numero:'142',bairro:'Vila Madalena',cidade:'São Paulo',cep:'05435-000'}, 'Alérgico a glúten'],
-      ['Camila Rodrigues Lima',   '11991234502', {rua:'Av. Paulista',numero:'900',bairro:'Bela Vista',cidade:'São Paulo',cep:'01310-100'}, ''],
-      ['Rafael Oliveira Costa',   '11991234503', {rua:'Rua Oscar Freire',numero:'55',bairro:'Jardins',cidade:'São Paulo',cep:'01426-001'}, 'Prefere entrega após 19h'],
-      ['Isabela Martins Souza',   '11991234504', {rua:'Rua Consolação',numero:'310',bairro:'Consolação',cidade:'São Paulo',cep:'01302-000'}, ''],
-      ['Bruno Almeida Pereira',   '11991234505', {rua:'Rua Augusta',numero:'780',bairro:'Cerqueira César',cidade:'São Paulo',cep:'01304-001'}, 'Intolerante a lactose'],
-      ['Juliana Nascimento Dias', '11991234506', {rua:'Rua Haddock Lobo',numero:'220',bairro:'Jardim América',cidade:'São Paulo',cep:'01414-000'}, ''],
-      ['Thiago Carvalho Mendes',  '11991234507', {rua:'Alameda Santos',numero:'415',bairro:'Cerqueira César',cidade:'São Paulo',cep:'01419-000'}, 'Cliente VIP'],
-      ['Fernanda Gomes Ribeiro',  '11991234508', {rua:'Rua Fradique Coutinho',numero:'88',bairro:'Pinheiros',cidade:'São Paulo',cep:'05416-010'}, ''],
-      ['Diego Barbosa Freitas',   '11991234509', {rua:'Rua Wisard',numero:'305',bairro:'Vila Madalena',cidade:'São Paulo',cep:'05434-080'}, 'Sem cebola nos pedidos'],
-      ['Larissa Teixeira Moura',  '11991234510', {rua:'Rua Amauri',numero:'60',bairro:'Itaim Bibi',cidade:'São Paulo',cep:'01448-000'}, ''],
-      ['Matheus Cardoso Nunes',   '11991234511', {rua:'Rua Pamplona',numero:'1200',bairro:'Jardim Paulista',cidade:'São Paulo',cep:'01405-002'}, ''],
-      ['Patrícia Rocha Vieira',   '11991234512', {rua:'Av. Brigadeiro Faria Lima',numero:'2000',bairro:'Pinheiros',cidade:'São Paulo',cep:'01452-000'}, 'Prefere pagamento em dinheiro'],
-      ['Anderson Silva Campos',   '11991234513', {rua:'Rua Estados Unidos',numero:'175',bairro:'Jardim América',cidade:'São Paulo',cep:'01427-000'}, ''],
-      ['Natália Araújo Castro',   '11991234514', {rua:'Rua José Maria Lisboa',numero:'530',bairro:'Jardim Paulista',cidade:'São Paulo',cep:'01423-000'}, 'Vegetariana'],
-      ['Felipe Cunha Rezende',    '11991234515', {rua:'Rua Ministro Rocha Azevedo',numero:'72',bairro:'Cerqueira César',cidade:'São Paulo',cep:'01410-001'}, ''],
-      ['Vanessa Lopes Guimarães', '11991234516', {rua:'Rua Bela Cintra',numero:'450',bairro:'Consolação',cidade:'São Paulo',cep:'01415-000'}, 'Sem pimenta'],
-      ['Gustavo Pires Andrade',   '11991234517', {rua:'Rua da Consolação',numero:'1800',bairro:'Higienópolis',cidade:'São Paulo',cep:'01301-100'}, ''],
-      ['Aline Moreira Fonseca',   '11991234518', {rua:'Av. Higienópolis',numero:'618',bairro:'Higienópolis',cidade:'São Paulo',cep:'01238-001'}, 'Cliente frequente'],
-      ['Rodrigo Tavares Monteiro','11991234519', {rua:'Rua Itapeva',numero:'286',bairro:'Bela Vista',cidade:'São Paulo',cep:'01332-000'}, ''],
-      ['Carolina Batista Pinto',  '11991234520', {rua:'Rua Peixoto Gomide',numero:'1100',bairro:'Jardim Paulista',cidade:'São Paulo',cep:'01409-001'}, 'Prefere bordas recheadas'],
+      ['Lucas Ferreira Santos',   '11991234501', {rua:'ABC-1234', numero:'Civic LXR', bairro:'Preto', cidade:'Honda', cep:'2018'}, 'Parachoque dianteiro ralado'],
+      ['Camila Rodrigues Lima',   '11991234502', {rua:'KXP-9080', numero:'Onix LTZ', bairro:'Branco', cidade:'Chevrolet', cep:'2020'}, 'Martelinho de ouro na porta direita'],
+      ['Rafael Oliveira Costa',   '11991234503', {rua:'DRE-5512', numero:'Compass Longitude', bairro:'Cinza', cidade:'Jeep', cep:'2021'}, 'Polimento cristalizado completo'],
+      ['Isabela Martins Souza',   '11991234504', {rua:'FGT-3101', numero:'HB20 Comfort', bairro:'Prata', cidade:'Hyundai', cep:'2019'}, 'Pintura do paralama esquerdo'],
+      ['Bruno Almeida Pereira',   '11991234505', {rua:'HTY-0780', numero:'Corolla XEI', bairro:'Preto', cidade:'Toyota', cep:'2017'}, 'Recuperação de capô'],
+      ['Juliana Nascimento Dias', '11991234506', {rua:'MJU-2204', numero:'Renegade Sport', bairro:'Vermelho', cidade:'Jeep', cep:'2022'}, ''],
+      ['Thiago Carvalho Mendes',  '11991234507', {rua:'NHE-4159', numero:'Golf GTI', bairro:'Cinza', cidade:'Volkswagen', cep:'2015'}, 'Cliente exigente - Retoque de parachoque'],
+      ['Fernanda Gomes Ribeiro',  '11991234508', {rua:'OIP-8832', numero:'Sandero Stepway', bairro:'Areia', cidade:'Renault', cep:'2018'}, ''],
+      ['Diego Barbosa Freitas',   '11991234509', {rua:'PLM-3051', numero:'Fox Pepper', bairro:'Vermelho', cidade:'Volkswagen', cep:'2016'}, 'Troca do retrovisor esquerdo'],
+      ['Larissa Teixeira Moura',  '11991234510', {rua:'QAZ-6099', numero:'Creta Prestige', bairro:'Prata', cidade:'Hyundai', cep:'2021'}, ''],
+      ['Matheus Cardoso Nunes',   '11991234511', {rua:'WSX-1200', numero:'Cruze Sedan', bairro:'Branco', cidade:'Chevrolet', cep:'2019'}, ''],
+      ['Patrícia Rocha Vieira',   '11991234512', {rua:'EDC-2000', numero:'Fit EXL', bairro:'Cinza', cidade:'Honda', cep:'2015'}, 'Prefere pagamento via PIX'],
+      ['Anderson Silva Campos',   '11991234513', {rua:'RFV-1755', numero:'T-Cross Highline', bairro:'Bronze', cidade:'Volkswagen', cep:'2020'}, ''],
+      ['Natália Araújo Castro',   '11991234514', {rua:'TGB-5302', numero:'Mobi Trekking', bairro:'Branco', cidade:'Fiat', cep:'2022'}, 'Pequeno risco na lateral posterior'],
+      ['Felipe Cunha Rezende',    '11991234515', {rua:'YHN-0072', numero:'Duster Oroch', bairro:'Verde', cidade:'Renault', cep:'2017'}, ''],
+      ['Vanessa Lopes Guimarães', '11991234516', {rua:'UJM-4509', numero:'Ka SE 1.0', bairro:'Vermelho', cidade:'Ford', cep:'2019'}, ''],
+      ['Gustavo Pires Andrade',   '11991234517', {rua:'IKL-1800', numero:'Polo Comfortline', bairro:'Preto', cidade:'Volkswagen', cep:'2021'}, ''],
+      ['Aline Moreira Fonseca',   '11991234518', {rua:'OLP-0618', numero:'Argo Drive', bairro:'Cinza', cidade:'Fiat', cep:'2020'}, 'Frotista - Lavagem simples cortesia'],
+      ['Rodrigo Tavares Monteiro','11991234519', {rua:'ZAQ-0286', numero:'Tracker Premier', bairro:'Azul', cidade:'Chevrolet', cep:'2022'}, ''],
+      ['Carolina Batista Pinto',  '11991234520', {rua:'XSW-1100', numero:'EcoSport Titanium', bairro:'Prata', cidade:'Ford', cep:'2018'}, 'Prepara para venda'],
     ];
 
     for (const [nome, tel, end, obs] of clientes) {
       run('INSERT INTO clientes (nome, telefone, endereco, observacoes) VALUES (?, ?, ?, ?)',
         [nome, tel, JSON.stringify(end), obs]);
     }
-    console.log('✅ 20 clientes criados');
+    console.log('✅ 20 clientes/veículos criados');
 
-    const pizzas = [
-      ['Calabresa','Clássica brasileira, presença garantida em qualquer mesa','Calabresa fatiada, cebola e azeitona',{P:35,M:45,G:55},'tradicional'],
-      ['Margherita','A tradição italiana em cada fatia','Molho de tomate, mussarela e manjericão fresco',{P:34,M:44,G:54},'tradicional'],
-      ['Portuguesa','Farta e completa, agrada a todos','Presunto, ovo, cebola, azeitona e pimentão',{P:38,M:48,G:58},'tradicional'],
-      ['Napolitana','Simples, leve e deliciosa','Tomate, mussarela, alho e orégano',{P:33,M:43,G:53},'tradicional'],
-      ['Muçarela','A base de tudo, perfeita em sua simplicidade','Molho de tomate e mussarela',{P:30,M:40,G:50},'tradicional'],
-      ['Frango com Catupiry','Uma das mais pedidas da casa','Frango desfiado temperado e catupiry original',{P:38,M:48,G:58},'especial'],
-      ['Baiana','Para quem gosta de um toque picante','Calabresa moída, cebola e pimenta dedo-de-moça',{P:37,M:47,G:57},'especial'],
-      ['Atum','Sabor marcante e diferenciado','Atum em lascas, cebola roxa e azeitona preta',{P:40,M:50,G:60},'especial'],
-      ['Vegetariana','Colorida, saudável e cheia de sabor','Abobrinha, cenoura, brócolis, pimentão e tomate cereja',{P:36,M:46,G:56},'especial'],
-      ['Pepperoni','Estilo americano com muito pepperoni crocante','Pepperoni fatiado, mussarela e orégano',{P:41,M:51,G:61},'especial'],
-      ['Frango com Bacon','Combinação irresistível de sabores defumados','Frango desfiado, bacon crocante, catupiry e milho',{P:42,M:52,G:62},'especial'],
-      ['Camarão','Sabor do mar com toque especial da casa','Camarão ao alho e óleo, catupiry e salsa',{P:52,M:65,G:78},'especial'],
-      ['Quatro Queijos','Para os verdadeiros apaixonados por queijo','Mussarela, provolone, gorgonzola e parmesão',{P:44,M:56,G:68},'premium'],
-      ['Salmão com Cream Cheese','Sofisticada e surpreendente','Salmão defumado, cream cheese, alcaparras e endro',{P:58,M:72,G:86},'premium'],
-      ['Trufada com Cogumelos','Alta gastronomia em formato de pizza','Funghi porcini, cogumelo Paris, azeite trufado e parmesão',{P:62,M:78,G:94},'premium'],
-      ['Filet Mignon com Gorgonzola','Requinte e sabor em cada pedaço','Medalhão de filé mignon, gorgonzola, rúcula e redução de vinho tinto',{P:68,M:85,G:102},'premium'],
-      ['Burrata com Prosciutto','A escolha dos que apreciam o fino','Burrata fresca, prosciutto di Parma, rúcula e mel de trufa',{P:65,M:82,G:98},'premium'],
-      ['Camarão VIP','Nossa pizza mais requintada de frutos do mar','Camarão GG flambado, cream cheese, aspargos e ovas de peixe',{P:72,M:90,G:108},'premium'],
-      ['Chocolate com Morango','A sobremesa perfeita para encerrar a refeição','Chocolate ao leite, morango fresco e granulado',{P:42,M:52,G:62},'doce'],
-      ['Nutella com Banana','Irresistível combinação que conquista de primeira','Nutella, banana caramelada, leite condensado e canela',{P:46,M:58,G:70},'doce'],
+    // Catálogo de Serviços Técnicos da Oficina (O preço unificado é inserido nas 3 chaves para manter retrocompatibilidade com o front)
+    const servicos = [
+      ['Pintura de Peça Inteira', 'Aplicação de primer, tinta automotiva basecoat e verniz alto sólidos', 'Mão de obra e insumos inclusos', {P:450, M:450, G:450}, 'pintura'],
+      ['Retoque Localizado', 'Pintura restrita à área afetada com técnica de alongamento', 'Insumos de pintura', {P:300, M:300, G:300}, 'pintura'],
+      ['Pintura de Parachoque', 'Remoção de riscos profundos e pintura completa da peça plástica', 'Promotor de aderência e tinta', {P:400, M:400, G:400}, 'pintura'],
+      ['Funilaria de Parachoque', 'Recuperação e alinhamento de travas e deformações plásticas', 'Mão de obra de funilaria', {P:250, M:250, G:250}, 'funilaria'],
+      ['Funilaria de Porta Lateral', 'Reparação de amassados e rebatimento de chapa automotiva', 'Mão de obra estrutural', {P:350, M:350, G:350}, 'funilaria'],
+      ['Martelinho de Ouro (Por Amassado)', 'Técnica de desamassamento artesanal sem danificar a pintura original', 'Serviço artesanal', {P:150, M:150, G:150}, 'funilaria'],
+      ['Funilaria de Capô / Teto', 'Recuperação de grandes áreas amassadas ou afetadas por granizo', 'Mão de obra pesada', {P:600, M:600, G:600}, 'funilaria'],
+      ['Polimento Comercial', 'Eliminação de riscos superficiais e realce do brilho do verniz', 'Massa de polir e ceras protetoras', {P:250, M:250, G:250}, 'polimento'],
+      ['Polimento Técnico Cristalizado', 'Correção detalhada de pintura com aplicação de selante acrílico protetor', 'Compostos importados e selante', {P:450, M:450, G:450}, 'polimento'],
+      ['Vitrificação de Pintura', 'Aplicação de revestimento cerâmico de alta durabilidade (Proteção 9H)', 'Vitrificador cerâmico e panos de microfibra', {P:900, M:900, G:900}, 'polimento'],
+      ['Revitalização de Faróis (Par)', 'Lixamento e aplicação de verniz ou polimento nas lentes amareladas', 'Lixas d\'água e massa de polir', {P:120, M:120, G:120}, 'polimento'],
+      ['Higienização Interna Completa', 'Limpeza profunda de bancos, carpetes, teto e painel com extratora', 'Shampoo antibactericida', {P:300, M:300, G:300}, 'estetica'],
+      ['Pintura de Roda (Unidade)', 'Reparação de ralados de guia e repintura da roda de liga leve', 'Tinta prata/grafite e verniz', {P:180, M:180, G:180}, 'pintura'],
+      ['Alinhamento de Frente (Painel Frontal)', 'Cunhas e esticadores para alinhamento do painel e fixação de faróis', 'Mão de obra estrutural', {P:400, M:400, G:400}, 'funilaria'],
+      ['Solda Plástica / Recuperação', 'Soldagem de suportes internos de faróis e grades quebras', 'Eletrodos plásticos e telas', {P:100, M:100, G:100}, 'funilaria'],
+      ['Substituição de Peça Externa', 'Instalação e alinhamento de capô, porta ou paralama novo vindo do fornecedor', 'Mão de obra de montagem', {P:200, M:200, G:200}, 'funilaria'],
+      ['Remoção de Emblemas e Cola', 'Retirada de colas de insulfilm ou emblemas antigos sem marcar o verniz', 'Removedores cítricos', {P:80, M:80, G:80}, 'estetica'],
+      ['Retoque de Risco com Pincel', 'Preenchimento milimétrico com tinta original para proteção contra ferrugem', 'Tinta original da cor do veículo', {P:50, M:50, G:50}, 'pintura'],
+      ['Checklist e Desmontagem Técnica', 'Desmontagem de forros de porta e maçanetas para pintura limpa', 'Mão de obra interna', {P:150, M:150, G:150}, 'funilaria'],
+      ['Lavagem Técnica Detalhada + Cera', 'Lavagem de pátio com limpeza de caixas de roda e aplicação de cera rápida', 'Shampoo neutro e cera líquida', {P:90, M:90, G:90}, 'estetica'],
     ];
 
-    for (const [nome, desc, ing, precos, cat] of pizzas) {
+    for (const [nome, desc, ing, precos, cat] of servicos) {
       run('INSERT INTO pizzas (nome, descricao, ingredientes, precos, categoria) VALUES (?, ?, ?, ?, ?)',
         [nome, desc, ing, JSON.stringify(precos), cat]);
     }
-    console.log('✅ 20 pizzas criadas');
+    console.log('✅ 20 serviços criados no catálogo');
 
     console.log('======================================');
-    console.log('🔥 SEED EXECUTADO COM SUCESSO!');
+    console.log('🔥 SEED OPERACIONAL EXECUTADO COM SUCESSO!');
     console.log('======================================');
-    console.log('Login: admin@pizzaria.com | Senha: 123456');
+    console.log('Login: admin@jafunilaria.com | Senha: 123456');
     console.log('======================================');
     process.exit(0);
   } catch (err) {
